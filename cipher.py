@@ -14,7 +14,6 @@
 ##############################################################################
 class Cipher:
     def __init__(self):
-        self.row_length = ''
         self._ciphertext = ''
 
     def get_author(self):
@@ -30,7 +29,7 @@ class Cipher:
     def get_cipher_citation(self):
         citation = "Simmons, Gustavus J.. \"transposition cipher\". Encyclopedia Britannica, 10 May. 2011,"\
                     "https://www.britannica.com/topic/transposition-cipher. Accessed 6 December 2023."
-        return "citation"
+        return citation
 
     ##########################################################################
     # GET PSEUDOCODE
@@ -40,26 +39,26 @@ class Cipher:
 
         # The encrypt pseudocode
         pc = "encrypt(plaintext,password)\n" \
-             "   rowLength <- len(password)\n" \
-             "   IF rowLength >= len(plaintext)\n" \
-             "      rowLength <- len(password)\n" \
-             "   FOR col <- 0...rowLength\n" \
+             "   columns <- len(password)\n" \
+             "   IF more columns than len(plaintext)\n" \
+             "      columns <- len(password) / 2\n" \
+             "   WHILE len(plaintext) \%\ columns\n" \
+             "      add space to end of plaintext\n" \
+             "   FOR col 0...columns\n" \
+             "      p <- col\n" \
              "      WHILE p < len(plaintext)\n" \
-             "         ciphertext[col] <- plaintext[p]\n" \
-             "         p <- p + rowLength\n" \
-             "   RETURN " 
+             "         ciphertext[col] <- ciphertext[col] + plaintext[p]\n" \
+             "         p <- p + columns\n" \
+             "   return ciphertext\n\n" 
 
         # The decrypt pseudocode
         pc += "decrypt(cipherText,password)\n" \
-              "   numRows = -(-len(cipherText) // len(password)\n" \
-              "   colOrder <- getColOrder(password,len(password))\n" \
-              "   colLengths <- getColLengths(ciphertext,len(password))\n" \
-              "   FOR col is all values of colOrder\n" \
-              "      FOR row <- 0...len(numRows)\n" \
-              "         IF row < colLengths[col]\n" \
-              "            plaintext[row * num_cols + col] = ciphertext[idx]\n"\
-              "            idx <- idx + 1\n" \
-              "   return plaintext"
+              "   columns <- len(password)\n" \
+              "   rows <- -(len(ciphertext) // columns)\n" \
+              "   FOR outer 0...len(rows)\n" \
+              "      FOR array is all values of self._ciphertext\n" \
+              "         plaintext <- plaintext + array[outer]\n" \
+              "   return plaintext\n"
 
         return pc
 
@@ -69,22 +68,29 @@ class Cipher:
     #  it then concatenates the characters from these columns to generate the ciphertext.
     ##########################################################################
     def encrypt(self, plaintext, password):
+        # Get the number of columns
+        columns = len(password)
+
+        # Make sure there are less columns than characters in plaintext
+        if columns >= len(plaintext):
+            columns = len(password) / 2
+
+        # Make sure every columns will have the same amount of characters
+        while len(plaintext) % columns:
+            plaintext += " "
         
-        self.row_length = len(password)
-
-        if self.row_length >= len(plaintext):
-            self.row_length = len(password) / 2
-
-        self._ciphertext = [''] * self.row_length
-
-        for col in range(self.row_length):
+        self._ciphertext = [''] * columns
+        
+        # Iterate through the columns
+        for col in range(columns):
             p = col
 
+            # Iterate through plaintext characters
             while p < len(plaintext):
+                # Add the character to the current column fo the cipher
                 self._ciphertext[col] += plaintext[p]
-                p += self.row_length
+                p += self._columns # Move to the next character in the same column
 
-        
         return ''.join(self._ciphertext)
 
     ##########################################################################
@@ -95,55 +101,16 @@ class Cipher:
     ##########################################################################
     def decrypt(self, ciphertext, password):
         # Get the number of rows and columns
-        cols = len(password)
-        rows = -(-len(ciphertext) // cols)  
-        plaintext = [''] * len(ciphertext)
+        columns = len(password)
+        rows = -(-len(ciphertext) // columns)  
+        plaintext = ''
 
-        # Sorts the columns
-        colOrder = self._get_col_order(password,cols)
+        # Iterate through the _ciphertext array
+        for outer in range(rows):
+            # Iterate through each character in the array
+            for array in self._ciphertext:
+                # Add the character to the plaintext
+                plaintext += array[outer]
 
-        # Computes the length of each column
-        colLengths = self._get_col_lengths(ciphertext,cols)
-        idx = 0
-
-        # Iterate through the columns based on the sorted column order
-        for col in colOrder:
-            # Iterate through the rows
-            for row in range(rows):
-                # Check if the current row is within range
-                if row < colLengths[col]:
-                    # Assign the ciphertext character to the plaintext position
-                    plaintext[row * cols + col] = ciphertext[idx]
-                    idx += 1
-
-        return ''.join(plaintext)
+        return plaintext.strip()
     
-    ##########################################################################
-    # GET COL ORDER
-    # Sorts the indices based on the characters in the password using a simple sort.
-    ##########################################################################
-    def _get_col_order(self,password, num_cols):
-        col_order = list(range(num_cols))
-
-        # Sorts the indices using a bubble sort algorithm
-        for i in range(num_cols - 1):
-            for j in range(0, num_cols - i - 1):
-                if password[col_order[j]] > password[col_order[j + 1]]:
-                    col_order[j], col_order[j + 1] = col_order[j + 1], col_order[j]
-
-        return col_order
-    
-    ##########################################################################
-    # GET COL LENGTHS
-    #  Computes the length of each column in the ciphertext by slicing it 
-    #  based on the number of columns.
-    ##########################################################################
-    def _get_col_lengths(self,ciphertext, cols):
-        col_lengths = []
-
-        # Computes the length of each column by slicing the ciphertext
-        for i in range(cols):
-            length = len(ciphertext[i::cols])
-            col_lengths.append(length)
-        
-        return col_lengths
